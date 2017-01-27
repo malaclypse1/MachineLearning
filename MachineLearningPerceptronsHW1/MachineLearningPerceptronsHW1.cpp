@@ -17,6 +17,7 @@ Uses the eigen library for matrix manipulation: eigen.tuxfamily.org
 #include <string>
 #include <sstream>
 #include <Eigen/Dense>
+#include <windows.h> //QueryPerformanceFrequency & QueryPerformanceCounter
 #include "MachineLearningPerceptronsHW1.h"
 
 using namespace std;
@@ -58,8 +59,9 @@ int main()
 	Data *test = new Data[TESTSIZE];
 
 	if (readDataFromFile(train, "mnist_train.csv", TRAINSIZE)) return 1;
-	if (readDataFromFile(test, "mnist_test.csv", TESTSIZE)) return 1;
+	//if (readDataFromFile(test, "mnist_test.csv", TESTSIZE)) return 1;
 
+	/*
 	//run 3 experiments, with learning rates of 0.001, 0.01, and 0.1
 	for (float learningRate = 0.001f; learningRate < 0.2f; learningRate *= 10.0f) {
 
@@ -100,7 +102,8 @@ int main()
 		percep.PrintConfusion();
 		percep.WriteConfusionToFile(learningRate);
 	}
-	
+	*/
+
 	cout << "Run complete\n";
 	delete train;
 	delete test;
@@ -114,6 +117,7 @@ Function:	readDataFromFile
 Description: Loads training or test data from .csv files. This function is dumb
 	and assumes that the .csv is correct, having no more than quant lines each
 	containing 785 comma-delimited numbers.
+	Performance improves about 15 fold in with release-build optimizations
 Parameters:
 	data[] (I/O) - reference to heap allocated Data array
 	filename (I) - name of .csv file
@@ -124,9 +128,14 @@ int readDataFromFile(Data data[], string filename, unsigned short quant)
 	ifstream file;
 	file.open(filename);
 	int progress = quant / 60; // for visual indicator of read progress
+	LARGE_INTEGER startTime;
+	LARGE_INTEGER endTime;
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency); //frequency of performance counter
 
 	if (file.is_open())
 	{
+		QueryPerformanceCounter(&startTime);
 		cout << "reading from file " << filename << endl;
 		for (int datum = 0; datum < quant; datum++) {
 			if (datum > 0 && datum % progress == 0)
@@ -163,7 +172,8 @@ int readDataFromFile(Data data[], string filename, unsigned short quant)
 				}
 			}
 		}
-		cout << "\nsuccessfully read " << quant << " samples from " << filename << ".\n";
+		QueryPerformanceCounter(&endTime);
+		cout << "\nsuccessfully read " << quant << " samples from " << filename << " in " << (endTime.QuadPart - startTime.QuadPart) / frequency.QuadPart << " seconds.\n";
 	}
 	else {
 		cout << "file " << filename << " not found\n";
